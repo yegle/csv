@@ -16,21 +16,21 @@ type Unmarshaller interface {
 }
 
 var (
-	IntKindToSize = map[reflect.Kind]int{
+	intKindToSize = map[reflect.Kind]int{
 		reflect.Int:   0,
 		reflect.Int8:  8,
 		reflect.Int16: 16,
 		reflect.Int32: 32,
 		reflect.Int64: 64,
 	}
-	UintKindToSize = map[reflect.Kind]int{
+	uintKindToSize = map[reflect.Kind]int{
 		reflect.Uint:   0,
 		reflect.Uint8:  8,
 		reflect.Uint16: 16,
 		reflect.Uint32: 32,
 		reflect.Uint64: 64,
 	}
-	FloatKindToSize = map[reflect.Kind]int{
+	floatKindToSize = map[reflect.Kind]int{
 		reflect.Float32: 32,
 		reflect.Float64: 64,
 	}
@@ -41,7 +41,7 @@ type Decoder struct {
 	*csv.Reader
 }
 
-// NewCoder will create a new Decoder to be used
+// NewDecoder will create a new Decoder to be used
 func NewDecoder(r io.Reader) *Decoder {
 	dec := &Decoder{csv.NewReader(r)}
 	dec.TrimLeadingSpace = true
@@ -92,7 +92,7 @@ func (dec *Decoder) Decode(v interface{}) error {
 			}
 		}
 		k := f.Type().Kind()
-		if size, ok := IntKindToSize[k]; ok {
+		if size, ok := intKindToSize[k]; ok {
 			var number int64
 			if fValue != "" {
 				if number, err = strconv.ParseInt(fValue, 10, size); err != nil {
@@ -101,7 +101,7 @@ func (dec *Decoder) Decode(v interface{}) error {
 			}
 			f.SetInt(number)
 			continue
-		} else if size, ok := UintKindToSize[k]; ok {
+		} else if size, ok := uintKindToSize[k]; ok {
 			var number uint64
 			if fValue != "" {
 				if number, err = strconv.ParseUint(fValue, 10, size); err != nil {
@@ -110,7 +110,7 @@ func (dec *Decoder) Decode(v interface{}) error {
 			}
 			f.SetUint(number)
 			continue
-		} else if size, ok := FloatKindToSize[k]; ok {
+		} else if size, ok := floatKindToSize[k]; ok {
 			var number float64
 			if fValue != "" {
 				if number, err = strconv.ParseFloat(fValue, size); err != nil {
