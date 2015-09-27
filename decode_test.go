@@ -1,4 +1,4 @@
-package csv
+package csv_test
 
 import (
 	"flag"
@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/yegle/csv"
 )
 
 var TestInput string
@@ -28,13 +30,6 @@ func (s *MyString) UnmarshalCSV(data string) error {
 
 func NewMyString(s string) *MyString {
 	return (*MyString)(&s)
-}
-
-type MySimpleString string
-
-func (s *MySimpleString) UnmarshalCSV(data string) error {
-	*s = MySimpleString(data)
-	return nil
 }
 
 type MyDate struct {
@@ -91,7 +86,7 @@ func TestDecode(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		dec := NewDecoder(strings.NewReader(test.input))
+		dec := csv.NewDecoder(strings.NewReader(test.input))
 		get := reflect.New(reflect.TypeOf(test.expect)).Interface()
 		if err := dec.Decode(get); err != nil || !reflect.DeepEqual(reflect.ValueOf(get).Elem().Interface(), test.expect) {
 			t.Errorf("Expect %q unmarshal to %#v, get %#v: %v", test.input, test.expect, get, err)
@@ -100,6 +95,7 @@ func TestDecode(t *testing.T) {
 }
 
 func BenchmarkDecodeDefault(b *testing.B) {
+	b.ReportAllocs()
 	input := `1, 2, 3, 4, 5`
 	type T struct {
 		F1 int
@@ -110,32 +106,35 @@ func BenchmarkDecodeDefault(b *testing.B) {
 	}
 
 	t := T{}
-	dec := NewDecoder(strings.NewReader(input))
+	dec := csv.NewDecoder(strings.NewReader(input))
 	for i := 0; i < 1000000; i++ {
 		dec.Decode(&t)
 	}
 }
 
 func BenchmarkDecodeUnmarshaller(b *testing.B) {
+	b.ReportAllocs()
 	input := `"test","test","test","test","test"`
 	type T struct {
-		F1 MySimpleString
-		F2 MySimpleString
-		F3 MySimpleString
-		F4 MySimpleString
-		F5 MySimpleString
+		F1 *MyString
+		F2 *MyString
+		F3 *MyString
+		F4 *MyString
+		F5 *MyString
 	}
 	t := T{}
-	dec := NewDecoder(strings.NewReader(input))
+	dec := csv.NewDecoder(strings.NewReader(input))
 	for i := 0; i < 1000000; i++ {
 		dec.Decode(&t)
 	}
 }
 
 func BenchmarkLendingclubFile(b *testing.B) {
+	b.ReportAllocs()
 	if TestInput == "" {
-		return
+		b.Skip("Download loan data from https://www.lendingclub.com/info/download-data.action and specify test file with -input flag")
 	}
+	var err error
 	input, err := os.Open(TestInput)
 	if err != nil {
 		b.Errorf("failed to open file %q", TestInput)
@@ -145,7 +144,7 @@ func BenchmarkLendingclubFile(b *testing.B) {
 	if err != nil {
 		b.Errorf("failed to get size of %q", TestInput)
 	}
-	dec := NewDecoder(input)
+	dec := csv.NewDecoder(input)
 	type T struct {
 		Fid                      int
 		Fmemberid                int
@@ -207,7 +206,7 @@ func BenchmarkLendingclubFile(b *testing.B) {
 
 	t := T{}
 	for {
-		err := dec.Decode(&t)
+		err = dec.Decode(&t)
 		if err == io.EOF {
 			break
 		} else if err != nil {

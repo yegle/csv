@@ -53,18 +53,23 @@ func (dec *Decoder) Decode(v interface{}) error {
 	var (
 		err    error
 		record []string
+		fn     float64
+		in     int64
+		un     uint64
 	)
 	rv := reflect.ValueOf(v)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() || rv.Elem().Kind() != reflect.Struct {
 		return errors.New("Decode() expect a pointer to a struct as parameter")
 	}
 
-	s := reflect.ValueOf(v).Elem()
+	// the struct
+	s := rv.Elem()
 
 	record, err = dec.Read()
 	if err != nil {
 		return err
 	}
+
 	if s.NumField() != len(record) {
 		return fmt.Errorf("mismatch length of record: expect %d, get %d", s.NumField(), len(record))
 	}
@@ -93,31 +98,31 @@ func (dec *Decoder) Decode(v interface{}) error {
 		}
 		k := f.Type().Kind()
 		if size, ok := intKindToSize[k]; ok {
-			var number int64
+			in = 0
 			if fValue != "" {
-				if number, err = strconv.ParseInt(fValue, 10, size); err != nil {
+				if in, err = strconv.ParseInt(fValue, 10, size); err != nil {
 					return fmt.Errorf("failed in parsing %q: %v", fName, err)
 				}
 			}
-			f.SetInt(number)
+			f.SetInt(in)
 			continue
 		} else if size, ok := uintKindToSize[k]; ok {
-			var number uint64
+			un = 0
 			if fValue != "" {
-				if number, err = strconv.ParseUint(fValue, 10, size); err != nil {
+				if un, err = strconv.ParseUint(fValue, 10, size); err != nil {
 					return fmt.Errorf("failed in parsing %q: %v", fName, err)
 				}
 			}
-			f.SetUint(number)
+			f.SetUint(un)
 			continue
 		} else if size, ok := floatKindToSize[k]; ok {
-			var number float64
+			fn = 0.0
 			if fValue != "" {
-				if number, err = strconv.ParseFloat(fValue, size); err != nil {
+				if fn, err = strconv.ParseFloat(fValue, size); err != nil {
 					return fmt.Errorf("failed in parsing %q: %v", fName, err)
 				}
 			}
-			f.SetFloat(number)
+			f.SetFloat(fn)
 			continue
 		} else if k == reflect.String {
 			f.SetString(fValue)
